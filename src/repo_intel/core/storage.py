@@ -48,6 +48,12 @@ class Storage:
         # Enable WAL mode for better performance
         self.conn.execute("PRAGMA journal_mode=WAL")
 
+        # Performance optimizations
+        self.conn.execute("PRAGMA synchronous=NORMAL")  # Faster than FULL, safe with WAL
+        self.conn.execute("PRAGMA cache_size=10000")  # 10MB cache
+        self.conn.execute("PRAGMA temp_store=MEMORY")  # Temp tables in memory
+        self.conn.execute("PRAGMA mmap_size=268435456")  # 256MB memory-mapped I/O
+
         self._create_tables()
 
     def _create_tables(self):

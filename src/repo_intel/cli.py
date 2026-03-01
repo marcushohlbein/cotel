@@ -20,7 +20,7 @@ def main():
 @main.command()
 @click.option("--project", default="default", help="Project name")
 @click.option("--verbose", "-v", is_flag=True, help="Show detailed progress")
-@click.option("--chunk-size", default=50, help="Files per chunk (default: 50)")
+@click.option("--chunk-size", default=200, help="Files per chunk (default: 200)")
 def index(project, verbose, chunk_size):
     """Index the repository."""
     config = get_config()

@@ -41,7 +41,9 @@ class Indexer:
         self.storage = Storage(db_path)
         self.verbose = verbose
 
-    def index_file(self, file_path: str, project: str) -> Tuple[IndexStatus, int, Optional[str]]:
+    def index_file(
+        self, file_path: str, project: str, commit: bool = True
+    ) -> Tuple[IndexStatus, int, Optional[str]]:
         """Index a single file. Returns (status, symbol_count, error_msg)."""
         language = detect_language(file_path)
         if not language:
@@ -72,53 +74,48 @@ class Indexer:
 
             parse_result = parser.parse(content, file_path)
 
-            # Use transaction for batch insert
-            self.storage.conn.execute("BEGIN TRANSACTION")
-            try:
-                # Store file entry
-                file_id = Parser.generate_id()
-                file_entry = FileEntry(
-                    id=file_id,
-                    path=file_path,
+            # Store file entry
+            file_id = Parser.generate_id()
+            file_entry = FileEntry(
+                id=file_id,
+                path=file_path,
+                language=language,
+                project=project,
+                hash=current_hash,
+            )
+            self.storage.insert_file(file_entry, commit=commit)
+
+            # Store symbols
+            for symbol in parse_result.symbols:
+                entry = SymbolEntry(
+                    id=symbol.id,
+                    name=symbol.name,
+                    kind=symbol.kind,
                     language=language,
+                    file_id=file_id,
                     project=project,
-                    hash=current_hash,
+                    start_line=symbol.start_line,
+                    end_line=symbol.end_line,
+                    exported=symbol.exported,
+                    http_method=symbol.http_method,
+                    path=symbol.path,
                 )
-                self.storage.insert_file(file_entry)
+                self.storage.insert_symbol(entry, commit=commit)
 
-                # Store symbols
-                for symbol in parse_result.symbols:
-                    entry = SymbolEntry(
-                        id=symbol.id,
-                        name=symbol.name,
-                        kind=symbol.kind,
-                        language=language,
-                        file_id=file_id,
-                        project=project,
-                        start_line=symbol.start_line,
-                        end_line=symbol.end_line,
-                        exported=symbol.exported,
-                        http_method=symbol.http_method,
-                        path=symbol.path,
-                    )
-                    self.storage.insert_symbol(entry)
-
-                # Store relations
-                for relation in parse_result.relations:
-                    rel = Relation(
-                        id=Parser.generate_id(),
-                        from_symbol_id=relation.from_id,
-                        to_symbol_id=relation.to_id,
-                        relation_type=relation.relation_type,
-                    )
-                    self.storage.insert_relation(rel)
-
-                self.storage.conn.commit()
-            except Exception as e:
-                self.storage.conn.rollback()
-                raise e
+            # Store relations
+            for relation in parse_result.relations:
+                rel = Relation(
+                    id=Parser.generate_id(),
+                    from_symbol_id=relation.from_id,
+                    to_symbol_id=relation.to_id,
+                    relation_type=relation.relation_type,
+                )
+                self.storage.insert_relation(rel, commit=commit)
 
             return ("indexed", len(parse_result.symbols), None)
+
+        except Exception as e:
+            return ("failed", 0, str(e))
 
         except Exception as e:
             return ("failed", 0, str(e))
@@ -145,8 +142,11 @@ class Indexer:
                 total_chunks = (total + chunk_size - 1) // chunk_size
                 click.echo(f"  Processing chunk {chunk_num}/{total_chunks} [{i}/{total}]")
 
-            # Index file
-            status, symbol_count, error = self.index_file(file_path, project)
+            # Determine if we should commit (at end of chunk or last file)
+            is_chunk_end = (i % chunk_size == 0) or (i == total)
+
+            # Index file (don't commit yet)
+            status, symbol_count, error = self.index_file(file_path, project, commit=False)
 
             if status == "indexed":
                 indexed += 1
@@ -162,6 +162,16 @@ class Indexer:
                 lang = detect_language(file_path)
                 if lang:
                     languages[lang] = languages.get(lang, 0) + 1
+
+            # Commit at end of chunk
+            if is_chunk_end:
+                try:
+                    self.storage.conn.commit()
+                except Exception as e:
+                    self.storage.conn.rollback()
+                    # Mark remaining as failed
+                    failed += total - i
+                    break
 
         self.storage.set_last_index_time(time.time())
 
