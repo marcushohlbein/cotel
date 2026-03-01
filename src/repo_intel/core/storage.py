@@ -2,6 +2,7 @@ import sqlite3
 from dataclasses import dataclass
 from typing import List, Optional
 from pathlib import Path
+import time
 
 
 @dataclass
@@ -81,6 +82,13 @@ class Storage:
             )
         """)
 
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS metadata (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            )
+        """)
+
         self.conn.commit()
 
     def insert_file(self, file_entry: FileEntry):
@@ -152,3 +160,44 @@ class Storage:
             (file_id,),
         )
         self.conn.commit()
+
+    def delete_file(self, file_id: str):
+        self.conn.execute("DELETE FROM files WHERE id = ?", (file_id,))
+        self.conn.commit()
+
+    def count_files(self) -> int:
+        cursor = self.conn.execute("SELECT COUNT(*) FROM files")
+        return cursor.fetchone()[0]
+
+    def get_last_index_time(self) -> float:
+        cursor = self.conn.execute("SELECT value FROM metadata WHERE key = 'last_index_time'")
+        row = cursor.fetchone()
+        return float(row[0]) if row else 0.0
+
+    def set_last_index_time(self, timestamp: float):
+        self.conn.execute(
+            "INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)",
+            ("last_index_time", str(timestamp)),
+        )
+        self.conn.commit()
+
+    def is_index_stale(self, project_root: str, max_age_seconds: int = 3600) -> bool:
+        """Check if index is stale and needs reindexing."""
+        from repo_intel.utils.file_walker import walk_project
+
+        # Check 1: No index exists
+        if self.count_files() == 0:
+            return True
+
+        # Check 2: Last index too old
+        last_index = self.get_last_index_time()
+        if time.time() - last_index > max_age_seconds:
+            return True
+
+        # Check 3: File count mismatch
+        actual_files = len(walk_project(project_root))
+        db_files = self.count_files()
+        if abs(actual_files - db_files) > 5:  # Allow small variance
+            return True
+
+        return False

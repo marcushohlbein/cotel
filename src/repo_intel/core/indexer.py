@@ -6,6 +6,7 @@ from repo_intel.utils.language_detector import detect_language
 from repo_intel.utils.file_walker import walk_project
 import uuid
 import click
+import time
 
 
 class Indexer:
@@ -92,11 +93,12 @@ class Indexer:
         indexed = 0
         for i, file_path in enumerate(files, 1):
             if verbose or (i % 10 == 0):
-                # Show progress every 10 files or in verbose mode
                 progress = f"[{i}/{total}] " if not verbose else ""
                 click.echo(f"{progress}{file_path}")
 
             if self.index_file(file_path, project):
                 indexed += 1
+
+        self.storage.set_last_index_time(time.time())
 
         return indexed

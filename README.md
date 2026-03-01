@@ -8,7 +8,8 @@ Local-first structural intelligence for code repositories.
 - **Symbol Extraction**: Functions, classes, methods, interfaces, structs
 - **Call Graphs**: Track function/method calls across codebase
 - **HTTP Endpoints**: Detect Flask/FastAPI, Express, Spring MVC, Laravel routes
-- **Incremental Indexing**: Only reindex changed files
+- **Incremental Indexing**: Only reindex changed files (SHA-256 hashing)
+- **Lazy Indexing**: Auto-reindex when stale (zero-config, on-demand)
 - **Watch Mode**: Real-time monitoring with automatic reindexing
 - **Monorepo Support**: Auto-detect and handle multi-package projects
 
@@ -38,42 +39,66 @@ pip install -e .
 ```bash
 cd your-project
 repo-intel init      # Initialize .repo-intel/ database
-repo-intel index     # Index all files
-repo-intel watch     # Optional: Watch for changes (Ctrl+C to stop)
-repo-intel tool list-symbols --kind function --json
+repo-intel tool list-symbols --json  # Auto-indexes if needed!
 ```
+
+**That's it!** No need to manually run `repo-intel index` - tools auto-index when stale.
 
 ## CLI Commands
 
 ```bash
+# Initialize
 repo-intel init              # Initialize project database
+
+# Indexing (usually auto-triggered)
 repo-intel index             # Index all source files
 repo-intel index --verbose   # Index with progress feedback
-repo-intel watch             # Watch for file changes and reindex (Ctrl+C to stop)
 
-# Query tools
+# Query tools (auto-index if stale)
 repo-intel tool list-symbols [--kind function|class|method|endpoint]
 repo-intel tool find-symbol --name myFunction
 repo-intel tool get-callers --name myFunction
 repo-intel tool get-callees --name myFunction
+repo-intel tool list-symbols --no-auto-index  # Skip auto-indexing
+
+# Watch mode (optional)
+repo-intel watch             # Watch for file changes (Ctrl+C to stop)
 ```
 
-## Watch Mode
+## Lazy Indexing
 
-The `repo-intel watch` command monitors your project for file changes:
+**Zero-config, on-demand indexing.**
 
+Tool commands automatically reindex when:
+
+1. **No index exists** (first run)
+2. **Index is old** (>1 hour)
+3. **File count changed** (files added/deleted)
+
+**How it works:**
+- Uses SHA-256 hashing to detect changes
+- Only reindexes changed files (incremental)
+- Silent background reindex (no output unless error)
+- Stores last index timestamp in metadata
+
+**Example:**
 ```bash
-repo-intel watch                    # Watch current directory
-repo-intel watch --debounce 1.0     # Wait 1s before reindexing (default: 0.5s)
-repo-intel watch --project myproj   # Specify project name
+repo-intel init
+repo-intel tool list-symbols  # Auto-indexes (first time)
+
+# Make changes to files...
+
+repo-intel tool list-symbols  # Uses existing index (still fresh)
+
+# 2 hours later...
+
+repo-intel tool list-symbols  # Auto-reindexes (index stale)
 ```
 
-**Features:**
-- OS-native file system watching (FSEvents on macOS, inotify on Linux)
-- Debouncing to handle rapid saves (default 0.5s)
-- Automatic reindexing of changed files only
-- Handles file create, modify, and delete events
-- Press Ctrl+C to stop watching
+**Disable auto-indexing:**
+```bash
+repo-intel tool list-symbols --no-auto-index
+```
 
 ## Documentation
 
@@ -116,7 +141,7 @@ src/repo_intel/
 source venv/bin/activate
 pytest tests/ -v
 
-# Run all 66 tests
+# Run all 73 tests
 pytest tests/ -v
 ```
 
