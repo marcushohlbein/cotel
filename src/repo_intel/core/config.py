@@ -31,10 +31,9 @@ class Config:
 def get_config() -> Config:
     try:
         config_path = Path.cwd() / ".repo-intel" / "config.json"
-        if config_path.exists():
-            with open(config_path) as f:
-                data = json.load(f)
-                return Config.from_dict(data)
-    except (FileNotFoundError, OSError):
+        with open(config_path) as f:
+            data = json.load(f)
+            return Config.from_dict(data)
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
         pass
     return Config()

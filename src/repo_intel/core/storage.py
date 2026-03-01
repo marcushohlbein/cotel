@@ -89,6 +89,15 @@ class Storage:
             )
         """)
 
+        # Create indexes for common queries
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_symbols_file_id ON symbols(file_id)")
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_symbols_name ON symbols(name)")
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_symbols_kind ON symbols(kind)")
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_symbols_project ON symbols(project)")
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_relations_from ON relations(from_symbol_id)")
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_relations_to ON relations(to_symbol_id)")
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_files_path ON files(path)")
+
         self.conn.commit()
 
     def insert_file(self, file_entry: FileEntry):
@@ -151,6 +160,41 @@ class Storage:
     def get_symbols_by_file(self, file_id: str) -> List[SymbolEntry]:
         cursor = self.conn.execute("SELECT * FROM symbols WHERE file_id = ?", (file_id,))
         return [SymbolEntry(*row) for row in cursor.fetchall()]
+
+    def get_symbol_by_name(self, name: str) -> Optional[SymbolEntry]:
+        cursor = self.conn.execute("SELECT * FROM symbols WHERE name = ? LIMIT 1", (name,))
+        row = cursor.fetchone()
+        return SymbolEntry(*row) if row else None
+
+    def get_symbols_by_kind(self, kind: str) -> List[SymbolEntry]:
+        cursor = self.conn.execute("SELECT * FROM symbols WHERE kind = ?", (kind,))
+        return [SymbolEntry(*row) for row in cursor.fetchall()]
+
+    def get_relations_by_from(self, from_symbol_id: str, relation_type: str = None) -> List[Relation]:
+        if relation_type:
+            cursor = self.conn.execute(
+                "SELECT * FROM relations WHERE from_symbol_id = ? AND relation_type = ?",
+                (from_symbol_id, relation_type)
+            )
+        else:
+            cursor = self.conn.execute(
+                "SELECT * FROM relations WHERE from_symbol_id = ?",
+                (from_symbol_id,)
+            )
+        return [Relation(*row) for row in cursor.fetchall()]
+
+    def get_relations_by_to(self, to_symbol_id: str, relation_type: str = None) -> List[Relation]:
+        if relation_type:
+            cursor = self.conn.execute(
+                "SELECT * FROM relations WHERE to_symbol_id = ? AND relation_type = ?",
+                (to_symbol_id, relation_type)
+            )
+        else:
+            cursor = self.conn.execute(
+                "SELECT * FROM relations WHERE to_symbol_id = ?",
+                (to_symbol_id,)
+            )
+        return [Relation(*row) for row in cursor.fetchall()]
 
     def delete_symbols_by_file(self, file_id: str):
         self.conn.execute("DELETE FROM symbols WHERE file_id = ?", (file_id,))

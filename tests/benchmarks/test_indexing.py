@@ -22,8 +22,8 @@ def helper_{i}():
     import time
 
     start = time.time()
-    indexed = indexer.index_project(str(tmp_path), project="bench")
+    result = indexer.index_project(str(tmp_path), project="bench")
     duration = time.time() - start
 
-    assert indexed == 10
+    assert result.indexed == 10
     assert duration < 2.0  # Should complete in under 2 seconds

@@ -20,9 +20,9 @@ def main():
     # Index project
     db_path = tmp_path / "index.db"
     indexer = Indexer(str(db_path))
-    indexed = indexer.index_project(str(tmp_path), project="test")
+    result = indexer.index_project(str(tmp_path), project="test")
 
-    assert indexed >= 1
+    assert result.indexed >= 1
 
     # Query symbols
     storage = Storage(str(db_path))

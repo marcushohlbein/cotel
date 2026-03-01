@@ -33,7 +33,7 @@ def test_stale_detection_fresh_index():
 
         # Index the project
         indexer = Indexer(str(db_path), verbose=False)
-        indexer.index_project(tmpdir, "test", verbose=False)
+        indexer.index_project(tmpdir, "test")
 
         # Should not be stale immediately after indexing
         storage2 = Storage(str(db_path))
@@ -54,7 +54,7 @@ def test_stale_detection_old_index():
 
         # Index the project
         indexer = Indexer(str(db_path), verbose=False)
-        indexer.index_project(tmpdir, "test", verbose=False)
+        indexer.index_project(tmpdir, "test")
 
         # Set last index time to 2 hours ago
         storage2 = Storage(str(db_path))
@@ -78,7 +78,7 @@ def test_stale_detection_file_count_mismatch():
 
         # Index the project
         indexer = Indexer(str(db_path), verbose=False)
-        indexer.index_project(tmpdir, "test", verbose=False)
+        indexer.index_project(tmpdir, "test")
 
         # Add many new files (more than variance threshold of 5)
         for i in range(10):

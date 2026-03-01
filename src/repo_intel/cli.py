@@ -14,18 +14,52 @@ def main():
 @main.command()
 @click.option("--project", default="default", help="Project name")
 @click.option("--verbose", "-v", is_flag=True, help="Show detailed progress")
-def index(project, verbose):
+@click.option("--chunk-size", default=50, help="Files per chunk (default: 50)")
+def index(project, verbose, chunk_size):
     """Index the repository."""
     config = get_config()
     db_path = Path(config.project_root) / config.db_path
 
-    if verbose:
-        click.echo(f"Indexing project: {config.project_root}")
-
     indexer = Indexer(str(db_path), verbose=verbose)
-    indexed = indexer.index_project(config.project_root, project, verbose=verbose)
+    result = indexer.index_project(config.project_root, project, chunk_size=chunk_size)
 
-    click.echo(f"\n✅ Indexed {indexed} files")
+    # Print summary
+    click.echo("\n" + "=" * 60)
+    click.echo("📊 INDEXING SUMMARY")
+    click.echo("=" * 60)
+    click.echo(f"Total files:      {result.total_files}")
+    click.echo(
+        f"✅ Indexed:       {result.indexed} ({result.indexed / result.total_files * 100:.1f}%)"
+    )
+    click.echo(
+        f"⏭️  Skipped:       {result.skipped} ({result.skipped / result.total_files * 100:.1f}%)"
+    )
+
+    if result.failed > 0:
+        click.secho(
+            f"❌ Failed:         {result.failed} ({result.failed / result.total_files * 100:.1f}%)",
+            fg="red",
+        )
+    else:
+        click.echo(f"❌ Failed:         0")
+
+    click.echo(f"\nTotal symbols:    {result.total_symbols}")
+    click.echo(f"Duration:         {result.duration:.2f}s")
+    click.echo(f"Success rate:     {result.success_rate:.1f}%")
+
+    if result.languages:
+        click.echo("\nLanguages:")
+        for lang, count in sorted(result.languages.items(), key=lambda x: x[1], reverse=True):
+            click.echo(f"  {lang}: {count}")
+
+    if result.failed_files:
+        click.secho(f"\n❌ Failed files ({len(result.failed_files)}):", fg="red")
+        for failed_file in result.failed_files[:10]:  # Show first 10
+            click.secho(f"  - {failed_file}", fg="red")
+        if len(result.failed_files) > 10:
+            click.secho(f"  ... and {len(result.failed_files) - 10} more", fg="red")
+
+    click.echo("=" * 60)
 
 
 @main.command()
@@ -58,8 +92,10 @@ def tool(tool_name, output_json, kind_filter, symbol_name, no_auto_index):
     if not no_auto_index and storage.is_index_stale(config.project_root):
         click.echo("🔄 Index stale, auto-reindexing...", err=True)
         indexer = Indexer(str(db_path), verbose=False)
-        indexer.index_project(config.project_root, "default", verbose=False)
-        click.echo("✅ Reindex complete", err=True)
+        result = indexer.index_project(config.project_root, "default", chunk_size=100)
+        click.echo(
+            f"✅ Reindex complete: {result.indexed} files, {result.total_symbols} symbols", err=True
+        )
 
     tools = {
         "list-symbols": lambda: list_symbols(storage, kind_filter),
