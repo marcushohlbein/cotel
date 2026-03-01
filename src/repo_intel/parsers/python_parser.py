@@ -1,6 +1,6 @@
 from tree_sitter import Parser as TSParser, Language
 import tree_sitter_python
-from repo_intel.parsers.base import Parser, ParseResult, Symbol, Import, Relation
+from repo_intel.parsers.base import Parser, ParseResult, Symbol, Relation
 import uuid
 
 
