@@ -17,14 +17,13 @@ class GoParser(Parser):
         root_node = tree.root_node
 
         symbols = []
-        imports = []
         relations = []
 
-        self._traverse(root_node, content, file_id, symbols, imports, relations)
+        self._traverse(root_node, content, file_id, symbols, relations)
 
         return ParseResult(symbols=symbols, relations=relations)
 
-    def _traverse(self, node, content, file_id, symbols, imports, relations):
+    def _traverse(self, node, content, file_id, symbols, relations):
         # Handle method declarations (receiver functions)
         if node.type == "method_declaration":
             method_name = self._get_field_identifier(node)
@@ -98,12 +97,9 @@ class GoParser(Parser):
                             )
                         )
 
-        # Handle imports
-        elif node.type == "import_declaration":
-            self._extract_import(node, imports)
 
         for child in node.children:
-            self._traverse(child, content, file_id, symbols, imports, relations)
+            self._traverse(child, content, file_id, symbols, relations)
 
     def _get_identifier(self, node):
         """Extract identifier from node."""
@@ -154,24 +150,6 @@ class GoParser(Parser):
                     elif subchild.type == "identifier":
                         return subchild.text.decode("utf-8")
         return None
-
-    def _extract_import(self, node, imports):
-        """Extract import statements."""
-        for child in node.children:
-            if child.type == "import_spec_list":
-                for spec in child.children:
-                    if spec.type == "import_spec":
-                        for subchild in spec.children:
-                            if subchild.type == "interpreted_string_literal":
-                                import_path = subchild.text.decode("utf-8").strip('"')
-                                imports.append(
-                                    Import(module=import_path, line=spec.start_point[0] + 1)
-                                )
-            elif child.type == "import_spec":
-                for subchild in child.children:
-                    if subchild.type == "interpreted_string_literal":
-                        import_path = subchild.text.decode("utf-8").strip('"')
-                        imports.append(Import(module=import_path, line=child.start_point[0] + 1))
 
     def _extract_http_info(self, node):
         """Extract HTTP info from function signature (common Go web frameworks)."""

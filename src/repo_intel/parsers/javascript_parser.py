@@ -19,14 +19,13 @@ class JavaScriptParser(Parser):
         root_node = tree.root_node
 
         symbols = []
-        imports = []
         relations = []
 
-        self._traverse(root_node, content, file_id, symbols, imports, relations)
+        self._traverse(root_node, content, file_id, symbols, relations)
 
         return ParseResult(symbols=symbols, relations=relations)
 
-    def _traverse(self, node, content, file_id, symbols, imports, relations):
+    def _traverse(self, node, content, file_id, symbols, relations):
         # Function declarations
         if node.type == "function_declaration":
             func_name = self._get_identifier(node)
@@ -67,13 +66,10 @@ class JavaScriptParser(Parser):
         elif node.type == "expression_statement":
             self._handle_expression(node, symbols, relations)
 
-        # Import statements
-        elif node.type == "import_statement":
-            self._extract_import(node, imports)
 
         # Recurse
         for child in node.children:
-            self._traverse(child, content, file_id, symbols, imports, relations)
+            self._traverse(child, content, file_id, symbols, relations)
 
     def _get_identifier(self, node):
         """Extract identifier from node."""
@@ -159,14 +155,3 @@ class JavaScriptParser(Parser):
                     if arg.type == "string":
                         return arg.text.decode("utf-8").strip('"').strip("'")
         return None
-
-    def _extract_import(self, node, imports):
-        """Extract import statements."""
-        for child in node.children:
-            if child.type == "string":
-                imports.append(
-                    Import(
-                        module=child.text.decode("utf-8").strip('"').strip("'"),
-                        line=node.start_point[0] + 1,
-                    )
-                )

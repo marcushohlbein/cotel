@@ -17,15 +17,14 @@ class JavaParser(Parser):
         root_node = tree.root_node
 
         symbols = []
-        imports = []
         relations = []
 
         self._in_class = False
-        self._traverse(root_node, content, file_id, symbols, imports, relations)
+        self._traverse(root_node, content, file_id, symbols, relations)
 
         return ParseResult(symbols=symbols, relations=relations)
 
-    def _traverse(self, node, content, file_id, symbols, imports, relations):
+    def _traverse(self, node, content, file_id, symbols, relations):
         # Handle method declarations
         if node.type == "method_declaration":
             method_name = self._get_child_name(node, "identifier")
@@ -78,7 +77,7 @@ class JavaParser(Parser):
 
                 # Recurse into class body
                 for child in node.children:
-                    self._traverse(child, content, file_id, symbols, imports, relations)
+                    self._traverse(child, content, file_id, symbols, relations)
 
                 self._in_class = old_in_class
                 return
@@ -99,13 +98,10 @@ class JavaParser(Parser):
                     )
                 )
 
-        # Handle imports
-        elif node.type == "import_declaration":
-            self._extract_import(node, imports)
 
         # Recurse into children
         for child in node.children:
-            self._traverse(child, content, file_id, symbols, imports, relations)
+            self._traverse(child, content, file_id, symbols, relations)
 
     def _get_child_name(self, node, child_type):
         """Extract name from child node by type."""
@@ -173,14 +169,6 @@ class JavaParser(Parser):
                                     )
                                 )
 
-    def _extract_import(self, node, imports):
-        """Extract import statements."""
-        for child in node.children:
-            if child.type == "scoped_identifier":
-                imports.append(
-                    Import(module=child.text.decode("utf-8"), line=node.start_point[0] + 1)
-                )
-                break
 
     def _extract_http_method(self, node):
         """Extract HTTP method from annotations (Spring MVC)."""

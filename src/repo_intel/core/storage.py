@@ -245,17 +245,22 @@ class Storage:
         from repo_intel.utils.file_walker import walk_project
 
         # Check 1: No index exists
-        if self.count_files() == 0:
+        db_files = self.count_files()
+        if db_files == 0:
             return True
 
         # Check 2: Last index too old
         last_index = self.get_last_index_time()
-        if time.time() - last_index > max_age_seconds:
+        age = time.time() - last_index
+        if age > max_age_seconds:
             return True
 
-        # Check 3: File count mismatch
+        # Check 3: Index is very recent (< 60s) - skip expensive file walk
+        if age < 60:
+            return False
+
+        # Check 4: File count mismatch (expensive - walks filesystem)
         actual_files = len(walk_project(project_root))
-        db_files = self.count_files()
         if abs(actual_files - db_files) > 5:  # Allow small variance
             return True
 

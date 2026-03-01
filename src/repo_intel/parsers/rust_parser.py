@@ -17,15 +17,14 @@ class RustParser(Parser):
         root_node = tree.root_node
 
         symbols = []
-        imports = []
         relations = []
 
         self._in_impl = False
-        self._traverse(root_node, content, file_id, symbols, imports, relations)
+        self._traverse(root_node, content, file_id, symbols, relations)
 
         return ParseResult(symbols=symbols, relations=relations)
 
-    def _traverse(self, node, content, file_id, symbols, imports, relations):
+    def _traverse(self, node, content, file_id, symbols, relations):
         # Handle function definitions
         if node.type == "function_item":
             func_name = self._get_identifier(node)
@@ -70,7 +69,7 @@ class RustParser(Parser):
             self._in_impl = True
 
             for child in node.children:
-                self._traverse(child, content, file_id, symbols, imports, relations)
+                self._traverse(child, content, file_id, symbols, relations)
 
             self._in_impl = old_in_impl
             return
@@ -91,12 +90,9 @@ class RustParser(Parser):
                     )
                 )
 
-        # Handle use statements
-        elif node.type == "use_declaration":
-            self._extract_import(node, imports)
 
         for child in node.children:
-            self._traverse(child, content, file_id, symbols, imports, relations)
+            self._traverse(child, content, file_id, symbols, relations)
 
     def _get_identifier(self, node):
         """Extract identifier from node."""
@@ -142,11 +138,3 @@ class RustParser(Parser):
                         return subchild.text.decode("utf-8")
         return None
 
-    def _extract_import(self, node, imports):
-        """Extract use statements."""
-        for child in node.children:
-            if child.type == "scoped_identifier" or child.type == "identifier":
-                imports.append(
-                    Import(module=child.text.decode("utf-8"), line=node.start_point[0] + 1)
-                )
-                break

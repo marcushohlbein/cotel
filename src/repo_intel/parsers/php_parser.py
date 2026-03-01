@@ -17,15 +17,14 @@ class PHPParser(Parser):
         root_node = tree.root_node
 
         symbols = []
-        imports = []
         relations = []
 
         self._in_class = False
-        self._traverse(root_node, content, file_id, symbols, imports, relations)
+        self._traverse(root_node, content, file_id, symbols, relations)
 
         return ParseResult(symbols=symbols, relations=relations)
 
-    def _traverse(self, node, content, file_id, symbols, imports, relations):
+    def _traverse(self, node, content, file_id, symbols, relations):
         # Handle function definitions
         if node.type == "function_definition":
             func_name = self._get_name_from_node(node)
@@ -102,7 +101,7 @@ class PHPParser(Parser):
                 self._in_class = True
 
                 for child in node.children:
-                    self._traverse(child, content, file_id, symbols, imports, relations)
+                    self._traverse(child, content, file_id, symbols, relations)
 
                 self._in_class = old_in_class
                 return
@@ -123,12 +122,9 @@ class PHPParser(Parser):
                     )
                 )
 
-        # Handle use statements
-        elif node.type == "use_statement" or node.type == "namespace_use_declaration":
-            self._extract_import(node, imports)
 
         for child in node.children:
-            self._traverse(child, content, file_id, symbols, imports, relations)
+            self._traverse(child, content, file_id, symbols, relations)
 
     def _get_name_from_node(self, node):
         """Extract name from node by checking for name child."""
@@ -193,22 +189,6 @@ class PHPParser(Parser):
                                     )
                                 )
 
-    def _extract_import(self, node, imports):
-        """Extract use statements."""
-
-        # Handle namespace_use_declaration - look for qualified_name or namespace_name
-        def find_qualified_name(n):
-            if n.type in ["qualified_name", "namespace_name"]:
-                return n.text.decode("utf-8")
-            for child in n.children:
-                result = find_qualified_name(child)
-                if result:
-                    return result
-            return None
-
-        module = find_qualified_name(node)
-        if module:
-            imports.append(Import(module=module, line=node.start_point[0] + 1))
 
     def _extract_http_info(self, func_name):
         """Extract HTTP method and path from PHP function name (Laravel conventions)."""

@@ -17,17 +17,16 @@ class PythonParser(Parser):
         root_node = tree.root_node
 
         symbols = []
-        imports = []
         relations = []
 
         # Track if we're inside a class
         self._in_class = False
 
-        self._traverse(root_node, content, file_id, symbols, imports, relations)
+        self._traverse(root_node, content, file_id, symbols, relations)
 
         return ParseResult(symbols=symbols, relations=relations)
 
-    def _traverse(self, node, content, file_id, symbols, imports, relations):
+    def _traverse(self, node, content, file_id, symbols, relations):
         """Recursively traverse tree nodes."""
 
         # Handle function definitions
@@ -88,18 +87,14 @@ class PythonParser(Parser):
 
                 # Recurse into class body
                 for child in node.children:
-                    self._traverse(child, content, file_id, symbols, imports, relations)
+                    self._traverse(child, content, file_id, symbols, relations)
 
                 self._in_class = old_in_class
                 return  # Don't recurse again at the end
 
-        # Handle imports
-        elif node.type in ("import_statement", "import_from_statement"):
-            self._extract_import(node, imports)
-
         # Recurse into children
         for child in node.children:
-            self._traverse(child, content, file_id, symbols, imports, relations)
+            self._traverse(child, content, file_id, symbols, relations)
 
     def _get_child_name(self, node, child_type):
         """Extract name from child node by type."""
@@ -137,22 +132,6 @@ class PythonParser(Parser):
                             )
                         )
 
-    def _extract_import(self, node, imports):
-        """Extract import statements."""
-        if node.type == "import_statement":
-            for child in node.children:
-                if child.type == "dotted_name":
-                    imports.append(
-                        Import(module=child.text.decode("utf-8"), line=node.start_point[0] + 1)
-                    )
-                    break  # Only extract the module name once
-        elif node.type == "import_from_statement":
-            for child in node.children:
-                if child.type == "dotted_name":
-                    imports.append(
-                        Import(module=child.text.decode("utf-8"), line=node.start_point[0] + 1)
-                    )
-                    break  # Only extract the module name, not the imported items
 
     def _extract_http_method(self, node):
         """Extract HTTP method from Flask/FastAPI decorators."""
