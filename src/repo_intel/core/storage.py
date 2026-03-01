@@ -1,6 +1,7 @@
 import sqlite3
 from dataclasses import dataclass
 from typing import List, Optional
+from pathlib import Path
 
 
 @dataclass
@@ -38,6 +39,9 @@ class Relation:
 class Storage:
     def __init__(self, db_path: str):
         self.db_path = db_path
+        # Ensure parent directory exists
+        db_file = Path(db_path)
+        db_file.parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(db_path)
         self._create_tables()
 
