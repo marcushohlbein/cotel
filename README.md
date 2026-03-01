@@ -22,16 +22,23 @@ pip install repo-intel
 
 ### System-wide (macOS/Linux)
 ```bash
+# Install
 pip install --user repo-intel
-export PATH="$HOME/.local/bin:$PATH"  # Linux
-export PATH="$HOME/Library/Python/3.14/bin:$PATH"  # macOS
+
+# Add to PATH (one-time setup)
+echo 'export PATH="$HOME/Library/Python/3.14/bin:$PATH"' >> ~/.zshrc  # macOS
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc               # Linux
+
+# Reload shell
+source ~/.zshrc  # macOS
+source ~/.bashrc # Linux
 ```
 
 ### From Source
 ```bash
 git clone https://github.com/yourorg/repo-intel
 cd repo-intel
-pip install -e .
+pip install -e . --user
 ```
 
 ## Quick Start
@@ -46,6 +53,28 @@ repo-intel tool list-symbols --json  # That's it! Auto-indexes if needed
 2. Initialize the database
 3. Index your code (using SHA-256 incremental hashing)
 4. Return results
+
+## Typical Workflow
+
+```bash
+# 1. Navigate to your project
+cd my-project
+
+# 2. Query symbols (auto-indexes on first use)
+repo-intel tool list-symbols --json
+
+# 3. Find specific symbols
+repo-intel tool find-symbol --name getUser --json
+
+# 4. Analyze call graphs
+repo-intel tool get-callers --name getUser --json  # What calls getUser?
+repo-intel tool get-callees --name getUser --json  # What does getUser call?
+
+# 5. Filter by symbol type
+repo-intel tool list-symbols --kind endpoint --json  # HTTP endpoints only
+
+# 6. Work continues... (index auto-refreshes when stale)
+```
 
 ## CLI Commands
 
@@ -78,12 +107,11 @@ Tool commands automatically reindex when:
 **How it works:**
 - Uses SHA-256 hashing to detect changes
 - Only reindexes changed files (incremental)
-- Silent background reindex (no output unless error)
+- Silent background reindex (shows brief status)
 - Stores last index timestamp in metadata
 
 **Example:**
 ```bash
-repo-intel init
 repo-intel tool list-symbols  # Auto-indexes (first time)
 
 # Make changes to files...
@@ -98,6 +126,23 @@ repo-intel tool list-symbols  # Auto-reindexes (index stale)
 **Disable auto-indexing:**
 ```bash
 repo-intel tool list-symbols --no-auto-index
+```
+
+## Database
+
+**Location:** `.repo-intel/index.db` (SQLite)
+
+**Auto-created on first use** - no setup required.
+
+**What's stored:**
+- **files**: File paths, languages, SHA-256 hashes
+- **symbols**: Functions, classes, methods, interfaces
+- **relations**: Call graph (calls), inheritance (extends/implements)
+- **metadata**: Last index timestamp
+
+**To reset:**
+```bash
+rm -rf .repo-intel/  # Delete and rebuild on next query
 ```
 
 ## Documentation
@@ -121,8 +166,7 @@ The skill teaches agents when/how to use repo-intel for codebase exploration.
 
 ```
 .repo-intel/
-├── config.json              # Project configuration
-└── repo-intel.db            # SQLite database (symbols, relations)
+└── index.db                 # SQLite database (symbols, relations, metadata)
 
 src/repo_intel/
 ├── cli.py                   # CLI entry point
