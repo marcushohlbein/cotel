@@ -10,7 +10,7 @@ Local-first structural intelligence for code repositories.
 - **HTTP Endpoints**: Detect Flask/FastAPI, Express, Spring MVC, Laravel routes
 - **Incremental Indexing**: Only reindex changed files (SHA-256 hashing)
 - **Lazy Indexing**: Auto-reindex when stale (zero-config, on-demand)
-- **Watch Mode**: Real-time monitoring with automatic reindexing
+- **Zero Setup**: No init needed, database auto-created
 - **Monorepo Support**: Auto-detect and handle multi-package projects
 
 ## Installation
@@ -89,9 +89,6 @@ repo-intel tool list-symbols --no-auto-index  # Skip auto-indexing
 # Manual indexing (usually not needed)
 repo-intel index             # Index all source files
 repo-intel index --verbose   # Index with progress feedback
-
-# Watch mode (optional)
-repo-intel watch             # Watch for file changes (Ctrl+C to stop)
 ```
 
 ## Lazy Indexing
