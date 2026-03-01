@@ -3,6 +3,12 @@ from pathlib import Path
 from repo_intel.core.config import Config, get_config
 from repo_intel.core.indexer import Indexer
 from repo_intel.core.storage import Storage
+from repo_intel.core.constants import (
+    TOOL_LIST_SYMBOLS,
+    TOOL_FIND_SYMBOL,
+    TOOL_GET_CALLERS,
+    TOOL_GET_CALLEES,
+)
 
 
 @click.group()
@@ -98,10 +104,10 @@ def tool(tool_name, output_json, kind_filter, symbol_name, no_auto_index):
         )
 
     tools = {
-        "list-symbols": lambda: list_symbols(storage, kind_filter),
-        "find-symbol": lambda: find_symbol(storage, symbol_name) if symbol_name else None,
-        "get-callers": lambda: get_callers(storage, symbol_name) if symbol_name else None,
-        "get-callees": lambda: get_callees(storage, symbol_name) if symbol_name else None,
+        TOOL_LIST_SYMBOLS: lambda: list_symbols(storage, kind_filter),
+        TOOL_FIND_SYMBOL: lambda: find_symbol(storage, symbol_name) if symbol_name else None,
+        TOOL_GET_CALLERS: lambda: get_callers(storage, symbol_name) if symbol_name else None,
+        TOOL_GET_CALLEES: lambda: get_callees(storage, symbol_name) if symbol_name else None,
     }
 
     if tool_name not in tools:

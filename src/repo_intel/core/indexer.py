@@ -1,14 +1,17 @@
 from pathlib import Path
 from repo_intel.core.storage import Storage, FileEntry, SymbolEntry, Relation
 from repo_intel.parsers.factory import get_parser
+from repo_intel.parsers.base import Parser
 from repo_intel.utils.hashing import hash_file
 from repo_intel.utils.language_detector import detect_language
 from repo_intel.utils.file_walker import walk_project
-import uuid
 import click
 import time
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple, Literal, Optional
+
+
+IndexStatus = Literal["indexed", "skipped", "failed"]
 
 
 @dataclass
@@ -38,15 +41,15 @@ class Indexer:
         self.storage = Storage(db_path)
         self.verbose = verbose
 
-    def index_file(self, file_path: str, project: str):
-        """Index a single file. Returns (success, symbol_count, error_msg)."""
+    def index_file(self, file_path: str, project: str) -> Tuple[IndexStatus, int, Optional[str]]:
+        """Index a single file. Returns (status, symbol_count, error_msg)."""
         language = detect_language(file_path)
         if not language:
-            return (False, 0, None)
+            return ("failed", 0, None)
 
         parser = get_parser(language)
         if not parser:
-            return (False, 0, f"No parser for {language}")
+            return ("failed", 0, f"No parser for {language}")
 
         if self.verbose:
             click.echo(f"  → {file_path} ({language})")
@@ -70,7 +73,7 @@ class Indexer:
             parse_result = parser.parse(content, file_path)
 
             # Store file entry
-            file_id = str(uuid.uuid4())
+            file_id = Parser.generate_id()
             file_entry = FileEntry(
                 id=file_id, path=file_path, language=language, project=project, hash=current_hash
             )
@@ -96,17 +99,17 @@ class Indexer:
             # Store relations
             for relation in parse_result.relations:
                 rel = Relation(
-                    id=str(uuid.uuid4()),
+                    id=Parser.generate_id(),
                     from_symbol_id=relation.from_id,
                     to_symbol_id=relation.to_id,
                     relation_type=relation.relation_type,
                 )
                 self.storage.insert_relation(rel)
 
-            return (True, len(parse_result.symbols), None)
+            return ("indexed", len(parse_result.symbols), None)
 
         except Exception as e:
-            return (False, 0, str(e))
+            return ("failed", 0, str(e))
 
     def index_project(self, project_root: str, project: str, chunk_size: int = 50):
         """Index entire project with chunking and detailed results."""
@@ -133,19 +136,17 @@ class Indexer:
             # Index file
             status, symbol_count, error = self.index_file(file_path, project)
 
-            if status is True:
+            if status == "indexed":
                 indexed += 1
                 total_symbols += symbol_count
             elif status == "skipped":
                 skipped += 1
-            else:
+            else:  # failed
                 failed += 1
                 failed_files.append(file_path)
 
             # Track languages
-            if status in (True, "skipped"):
-                from repo_intel.utils.language_detector import detect_language
-
+            if status in ("indexed", "skipped"):
                 lang = detect_language(file_path)
                 if lang:
                     languages[lang] = languages.get(lang, 0) + 1
