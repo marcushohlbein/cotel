@@ -83,7 +83,7 @@ repo-intel index --project backend
 - ✅ Python
 - ✅ JavaScript
 - ✅ TypeScript
-- 🚧 Java (planned)
-- 🚧 Rust (planned)
-- 🚧 Go (planned)
-- 🚧 PHP (planned)
+- ✅ Java
+- ✅ Rust
+- ✅ Go
+- ✅ PHP

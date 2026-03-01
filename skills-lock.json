@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "skills": {
+    "ccpm-code-review": {
+      "source": "duongdev/ccpm",
+      "sourceType": "github",
+      "computedHash": "14b7a1b8efc4f274584dd266401b0fa3c3b69a695c1ffc6551e04b68871433d4"
+    },
+    "ccpm-debugging": {
+      "source": "duongdev/ccpm",
+      "sourceType": "github",
+      "computedHash": "dc6d290f5095a80de6d87c2ad2873dd973bfbfe75bd21c2dd1dad6dc6852c221"
+    },
+    "commit-assistant": {
+      "source": "duongdev/ccpm",
+      "sourceType": "github",
+      "computedHash": "a9ff16f08dc1e52283bd44b919f47a9f18d6d031bfda7bbbdc4db699cb466632"
+    },
+    "external-system-safety": {
+      "source": "duongdev/ccpm",
+      "sourceType": "github",
+      "computedHash": "6b4dedbe725f71fd6640d64bb22f0bc7bc2941d1608270f68877d5bb0ef78301"
+    },
+    "figma-integration": {
+      "source": "duongdev/ccpm",
+      "sourceType": "github",
+      "computedHash": "ba95795729088942ce4dd00568c80c30c4ff7d6d59940064546224b5e554d8c4"
+    },
+    "hook-optimization": {
+      "source": "duongdev/ccpm",
+      "sourceType": "github",
+      "computedHash": "e7baa50eeb407caa6744b4d86de76bde560543c53b6c6e15dc7a9e3f0716984e"
+    },
+    "linear-subagent-guide": {
+      "source": "duongdev/ccpm",
+      "sourceType": "github",
+      "computedHash": "f7c8dc4ecddcee2124b08611dcd3442a514e7b28c435bab2d003f3e89bbd492c"
+    },
+    "natural-workflow": {
+      "source": "duongdev/ccpm",
+      "sourceType": "github",
+      "computedHash": "763a5f730f9919d367a28c8abf320767d65f9fc4ff5fa38598d4d9556854583e"
+    },
+    "planning-strategy-guide": {
+      "source": "duongdev/ccpm",
+      "sourceType": "github",
+      "computedHash": "34a3229883e1c69b774036261cca5d84cbb46cb1ba5d175449908bbb710fb1ff"
+    },
+    "pm-workflow-guide": {
+      "source": "duongdev/ccpm",
+      "sourceType": "github",
+      "computedHash": "c933f653ff8c5967db9b0382d6649d7052579e1e9a983f7ae6967cb722b01ce3"
+    },
+    "workflow-state-tracking": {
+      "source": "duongdev/ccpm",
+      "sourceType": "github",
+      "computedHash": "586016ccadda210b8ef5603113dc4da51d2bb60bfb403554c3c1d73a169ffeb1"
+    }
+  }
+}
