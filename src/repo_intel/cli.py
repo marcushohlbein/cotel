@@ -30,8 +30,8 @@ def init(path):
 
 
 @main.command()
-@click.option('--project', default='default', help='Project name')
-@click.option('--verbose', '-v', is_flag=True, help='Show detailed progress')
+@click.option("--project", default="default", help="Project name")
+@click.option("--verbose", "-v", is_flag=True, help="Show detailed progress")
 def index(project, verbose):
     """Index the repository."""
     config = get_config()
