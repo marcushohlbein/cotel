@@ -9,6 +9,7 @@ Local-first structural intelligence for code repositories.
 - **Call Graphs**: Track function/method calls across codebase
 - **HTTP Endpoints**: Detect Flask/FastAPI, Express, Spring MVC, Laravel routes
 - **Incremental Indexing**: Only reindex changed files
+- **Watch Mode**: Real-time monitoring with automatic reindexing
 - **Monorepo Support**: Auto-detect and handle multi-package projects
 
 ## Installation
@@ -38,6 +39,7 @@ pip install -e .
 cd your-project
 repo-intel init      # Initialize .repo-intel/ database
 repo-intel index     # Index all files
+repo-intel watch     # Optional: Watch for changes (Ctrl+C to stop)
 repo-intel tool list-symbols --kind function --json
 ```
 
@@ -47,6 +49,7 @@ repo-intel tool list-symbols --kind function --json
 repo-intel init              # Initialize project database
 repo-intel index             # Index all source files
 repo-intel index --verbose   # Index with progress feedback
+repo-intel watch             # Watch for file changes and reindex (Ctrl+C to stop)
 
 # Query tools
 repo-intel tool list-symbols [--kind function|class|method|endpoint]
@@ -54,6 +57,23 @@ repo-intel tool find-symbol --name myFunction
 repo-intel tool get-callers --name myFunction
 repo-intel tool get-callees --name myFunction
 ```
+
+## Watch Mode
+
+The `repo-intel watch` command monitors your project for file changes:
+
+```bash
+repo-intel watch                    # Watch current directory
+repo-intel watch --debounce 1.0     # Wait 1s before reindexing (default: 0.5s)
+repo-intel watch --project myproj   # Specify project name
+```
+
+**Features:**
+- OS-native file system watching (FSEvents on macOS, inotify on Linux)
+- Debouncing to handle rapid saves (default 0.5s)
+- Automatic reindexing of changed files only
+- Handles file create, modify, and delete events
+- Press Ctrl+C to stop watching
 
 ## Documentation
 
