@@ -119,6 +119,11 @@ class Indexer:
 
     def index_project(self, project_root: str, project: str, chunk_size: int = 50):
         """Index entire project with chunking and detailed results."""
+        # Clean up orphaned entries first
+        removed = self.storage.cleanup_orphaned_files(project_root)
+        if removed > 0 and self.verbose:
+            click.echo(f"🧹 Cleaned up {removed} orphaned entries")
+
         start_time = time.time()
         files = walk_project(project_root)
         total = len(files)

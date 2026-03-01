@@ -260,3 +260,21 @@ class Storage:
             return True
 
         return False
+
+    def cleanup_orphaned_files(self, project_root: str) -> int:
+        """Remove database entries for files that no longer exist on disk."""
+        from pathlib import Path
+        from repo_intel.utils.file_walker import walk_project
+
+        current_files = set(walk_project(project_root))
+        cursor = self.conn.execute("SELECT id, path FROM files")
+        orphaned_ids = []
+        for file_id, path in cursor.fetchall():
+            if path not in current_files:
+                orphaned_ids.append(file_id)
+
+        for file_id in orphaned_ids:
+            self.delete_symbols_by_file(file_id)
+            self.delete_file(file_id)
+
+        return len(orphaned_ids)
