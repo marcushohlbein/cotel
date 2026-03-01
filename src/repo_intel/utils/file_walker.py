@@ -65,17 +65,3 @@ def walk_project(root: str) -> List[str]:
 
     return sorted(files)
 
-
-def find_project_roots(root: str) -> List[str]:
-    """Find monorepo subprojects by marker files."""
-    projects = []
-    root_path = Path(root)
-
-    for item in root_path.iterdir():
-        if item.is_dir():
-            for marker in PROJECT_MARKERS:
-                if (item / marker).exists():
-                    projects.append(str(item))
-                    break
-
-    return projects

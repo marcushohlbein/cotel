@@ -1,3 +1,4 @@
+"""Base parser interface and data classes."""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List
@@ -17,12 +18,6 @@ class Symbol:
 
 
 @dataclass
-class Import:
-    module: str
-    line: int
-
-
-@dataclass
 class Relation:
     from_id: str
     to_id: str
@@ -32,7 +27,6 @@ class Relation:
 @dataclass
 class ParseResult:
     symbols: List[Symbol]
-    imports: List[Import]
     relations: List[Relation]
 
 
@@ -41,7 +35,7 @@ class Parser(ABC):
 
     @abstractmethod
     def parse(self, content: str, file_id: str) -> ParseResult:
-        """Parse file content and extract symbols, imports, and relations."""
+        """Parse file content and extract symbols and relations."""
         pass
 
     @staticmethod

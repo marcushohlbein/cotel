@@ -23,7 +23,7 @@ class RustParser(Parser):
         self._in_impl = False
         self._traverse(root_node, content, file_id, symbols, imports, relations)
 
-        return ParseResult(symbols=symbols, imports=imports, relations=relations)
+        return ParseResult(symbols=symbols, relations=relations)
 
     def _traverse(self, node, content, file_id, symbols, imports, relations):
         # Handle function definitions

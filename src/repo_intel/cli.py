@@ -69,12 +69,6 @@ def index(project, verbose, chunk_size):
 
 
 @main.command()
-def stdio():
-    """Start stdio protocol for tool integration."""
-    click.echo("Stdio mode not yet implemented")
-
-
-@main.command()
 @click.argument("tool_name")
 @click.option("--json", "output_json", is_flag=True, help="Output as JSON")
 @click.option("--kind", "kind_filter", help="Filter symbols by kind")

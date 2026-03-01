@@ -117,9 +117,6 @@ class Indexer:
         except Exception as e:
             return ("failed", 0, str(e))
 
-        except Exception as e:
-            return ("failed", 0, str(e))
-
     def index_project(self, project_root: str, project: str, chunk_size: int = 50):
         """Index entire project with chunking and detailed results."""
         start_time = time.time()
