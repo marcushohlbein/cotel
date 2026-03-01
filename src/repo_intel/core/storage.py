@@ -44,6 +44,10 @@ class Storage:
         db_file = Path(db_path)
         db_file.parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(db_path)
+
+        # Enable WAL mode for better performance
+        self.conn.execute("PRAGMA journal_mode=WAL")
+
         self._create_tables()
 
     def _create_tables(self):
@@ -94,13 +98,15 @@ class Storage:
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_symbols_name ON symbols(name)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_symbols_kind ON symbols(kind)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_symbols_project ON symbols(project)")
-        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_relations_from ON relations(from_symbol_id)")
+        self.conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_relations_from ON relations(from_symbol_id)"
+        )
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_relations_to ON relations(to_symbol_id)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_files_path ON files(path)")
 
         self.conn.commit()
 
-    def insert_file(self, file_entry: FileEntry):
+    def insert_file(self, file_entry: FileEntry, commit: bool = False):
         self.conn.execute(
             "INSERT OR REPLACE INTO files VALUES (?, ?, ?, ?, ?)",
             (
@@ -111,9 +117,10 @@ class Storage:
                 file_entry.hash,
             ),
         )
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
 
-    def insert_symbol(self, symbol: SymbolEntry):
+    def insert_symbol(self, symbol: SymbolEntry, commit: bool = False):
         self.conn.execute(
             """INSERT OR REPLACE INTO symbols
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
@@ -131,14 +138,16 @@ class Storage:
                 symbol.path,
             ),
         )
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
 
-    def insert_relation(self, relation: Relation):
+    def insert_relation(self, relation: Relation, commit: bool = False):
         self.conn.execute(
             "INSERT OR REPLACE INTO relations VALUES (?, ?, ?, ?)",
             (relation.id, relation.from_symbol_id, relation.to_symbol_id, relation.relation_type),
         )
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
 
     def get_files(self) -> List[FileEntry]:
         cursor = self.conn.execute("SELECT * FROM files")
@@ -170,16 +179,17 @@ class Storage:
         cursor = self.conn.execute("SELECT * FROM symbols WHERE kind = ?", (kind,))
         return [SymbolEntry(*row) for row in cursor.fetchall()]
 
-    def get_relations_by_from(self, from_symbol_id: str, relation_type: str = None) -> List[Relation]:
+    def get_relations_by_from(
+        self, from_symbol_id: str, relation_type: str = None
+    ) -> List[Relation]:
         if relation_type:
             cursor = self.conn.execute(
                 "SELECT * FROM relations WHERE from_symbol_id = ? AND relation_type = ?",
-                (from_symbol_id, relation_type)
+                (from_symbol_id, relation_type),
             )
         else:
             cursor = self.conn.execute(
-                "SELECT * FROM relations WHERE from_symbol_id = ?",
-                (from_symbol_id,)
+                "SELECT * FROM relations WHERE from_symbol_id = ?", (from_symbol_id,)
             )
         return [Relation(*row) for row in cursor.fetchall()]
 
@@ -187,12 +197,11 @@ class Storage:
         if relation_type:
             cursor = self.conn.execute(
                 "SELECT * FROM relations WHERE to_symbol_id = ? AND relation_type = ?",
-                (to_symbol_id, relation_type)
+                (to_symbol_id, relation_type),
             )
         else:
             cursor = self.conn.execute(
-                "SELECT * FROM relations WHERE to_symbol_id = ?",
-                (to_symbol_id,)
+                "SELECT * FROM relations WHERE to_symbol_id = ?", (to_symbol_id,)
             )
         return [Relation(*row) for row in cursor.fetchall()]
 

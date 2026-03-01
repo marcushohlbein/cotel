@@ -72,39 +72,51 @@ class Indexer:
 
             parse_result = parser.parse(content, file_path)
 
-            # Store file entry
-            file_id = Parser.generate_id()
-            file_entry = FileEntry(
-                id=file_id, path=file_path, language=language, project=project, hash=current_hash
-            )
-            self.storage.insert_file(file_entry)
-
-            # Store symbols
-            for symbol in parse_result.symbols:
-                entry = SymbolEntry(
-                    id=symbol.id,
-                    name=symbol.name,
-                    kind=symbol.kind,
+            # Use transaction for batch insert
+            self.storage.conn.execute("BEGIN TRANSACTION")
+            try:
+                # Store file entry
+                file_id = Parser.generate_id()
+                file_entry = FileEntry(
+                    id=file_id,
+                    path=file_path,
                     language=language,
-                    file_id=file_id,
                     project=project,
-                    start_line=symbol.start_line,
-                    end_line=symbol.end_line,
-                    exported=symbol.exported,
-                    http_method=symbol.http_method,
-                    path=symbol.path,
+                    hash=current_hash,
                 )
-                self.storage.insert_symbol(entry)
+                self.storage.insert_file(file_entry)
 
-            # Store relations
-            for relation in parse_result.relations:
-                rel = Relation(
-                    id=Parser.generate_id(),
-                    from_symbol_id=relation.from_id,
-                    to_symbol_id=relation.to_id,
-                    relation_type=relation.relation_type,
-                )
-                self.storage.insert_relation(rel)
+                # Store symbols
+                for symbol in parse_result.symbols:
+                    entry = SymbolEntry(
+                        id=symbol.id,
+                        name=symbol.name,
+                        kind=symbol.kind,
+                        language=language,
+                        file_id=file_id,
+                        project=project,
+                        start_line=symbol.start_line,
+                        end_line=symbol.end_line,
+                        exported=symbol.exported,
+                        http_method=symbol.http_method,
+                        path=symbol.path,
+                    )
+                    self.storage.insert_symbol(entry)
+
+                # Store relations
+                for relation in parse_result.relations:
+                    rel = Relation(
+                        id=Parser.generate_id(),
+                        from_symbol_id=relation.from_id,
+                        to_symbol_id=relation.to_id,
+                        relation_type=relation.relation_type,
+                    )
+                    self.storage.insert_relation(rel)
+
+                self.storage.conn.commit()
+            except Exception as e:
+                self.storage.conn.rollback()
+                raise e
 
             return ("indexed", len(parse_result.symbols), None)
 
