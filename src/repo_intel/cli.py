@@ -30,16 +30,20 @@ def init(path):
 
 
 @main.command()
-@click.option("--project", default="default", help="Project name")
-def index(project):
+@click.option('--project', default='default', help='Project name')
+@click.option('--verbose', '-v', is_flag=True, help='Show detailed progress')
+def index(project, verbose):
     """Index the repository."""
     config = get_config()
     db_path = Path(config.project_root) / config.db_path
 
-    indexer = Indexer(str(db_path))
-    indexed = indexer.index_project(config.project_root, project)
+    if verbose:
+        click.echo(f"Indexing project: {config.project_root}")
 
-    click.echo(f"Indexed {indexed} files")
+    indexer = Indexer(str(db_path), verbose=verbose)
+    indexed = indexer.index_project(config.project_root, project, verbose=verbose)
+
+    click.echo(f"\n✅ Indexed {indexed} files")
 
 
 @main.command()

@@ -10,8 +10,9 @@ import uuid
 class Indexer:
     """Main indexing orchestration."""
 
-    def __init__(self, db_path: str):
+    def __init__(self, db_path: str, verbose: bool = False):
         self.storage = Storage(db_path)
+        self.verbose = verbose
 
     def index_file(self, file_path: str, project: str) -> bool:
         """Index a single file."""
@@ -22,6 +23,9 @@ class Indexer:
         parser = get_parser(language)
         if not parser:
             return False
+
+        if self.verbose:
+            print(f"  → {file_path} ({language})")
 
         # Check if file changed
         file_entry = self.storage.get_file_by_path(file_path)
@@ -43,7 +47,11 @@ class Indexer:
         # Store file entry
         file_id = str(uuid.uuid4())
         file_entry = FileEntry(
-            id=file_id, path=file_path, language=language, project=project, hash=current_hash
+            id=file_id,
+            path=file_path,
+            language=language,
+            project=project,
+            hash=current_hash
         )
         self.storage.insert_file(file_entry)
 
@@ -60,7 +68,7 @@ class Indexer:
                 end_line=symbol.end_line,
                 exported=symbol.exported,
                 http_method=symbol.http_method,
-                path=symbol.path,
+                path=symbol.path
             )
             self.storage.insert_symbol(entry)
 
@@ -70,7 +78,7 @@ class Indexer:
                 id=str(uuid.uuid4()),
                 from_symbol_id=relation.from_id,
                 to_symbol_id=relation.to_id,
-                relation_type=relation.relation_type,
+                relation_type=relation.relation_type
             )
             self.storage.insert_relation(rel)
 
