@@ -46,10 +46,131 @@ def index(project, verbose):
     click.echo(f"\n✅ Indexed {indexed} files")
 
 
+import click
+from pathlib import Path
+from repo_intel.core.config import Config, get_config
+from repo_intel.core.indexer import Indexer
+from repo_intel.core.storage import Storage
+import time
+from threading import Timer
+from watchdog.observers import Observer
+from watchdog.events import (
+    FileSystemEventHandler,
+    FileModifiedEvent,
+    FileCreatedEvent,
+    FileDeletedEvent,
+)
+
+
+class DebouncedHandler(FileSystemEventHandler):
+    """File system event handler with debouncing."""
+
+    def __init__(self, indexer, storage, project, debounce_seconds=0.5):
+        super().__init__()
+        self.indexer = indexer
+        self.storage = storage
+        self.project = project
+        self.debounce_seconds = debounce_seconds
+        self._timer = None
+        self._pending_creates = set()
+        self._pending_modifies = set()
+        self._pending_deletes = set()
+
+    def on_modified(self, event):
+        if event.is_directory:
+            return
+        self._pending_modifies.add(event.src_path)
+        self._schedule_process()
+
+    def on_created(self, event):
+        if event.is_directory:
+            return
+        self._pending_creates.add(event.src_path)
+        self._schedule_process()
+
+    def on_deleted(self, event):
+        if event.is_directory:
+            return
+        self._pending_deletes.add(event.src_path)
+        self._schedule_process()
+
+    def _schedule_process(self):
+        """Schedule file processing with debouncing."""
+        if self._timer:
+            self._timer.cancel()
+
+        self._timer = Timer(self.debounce_seconds, self._process_pending)
+        self._timer.start()
+
+    def _process_pending(self):
+        """Process all pending files."""
+        creates = set(self._pending_creates)
+        modifies = set(self._pending_modifies)
+        deletes = list(self._pending_deletes)
+
+        self._pending_creates.clear()
+        self._pending_modifies.clear()
+        self._pending_deletes.clear()
+
+        for file_path in deletes:
+            self._delete_file(file_path)
+
+        for file_path in creates.union(modifies):
+            self._index_file(file_path)
+
+    def _delete_file(self, file_path):
+        """Delete file and its symbols from index."""
+        from repo_intel.utils.language_detector import detect_language
+
+        if not detect_language(file_path):
+            return
+
+        file_entry = self.storage.get_file_by_path(file_path)
+        if file_entry:
+            self.storage.delete_symbols_by_file(file_entry.id)
+            self.storage.delete_file(file_entry.id)
+            click.secho(f"✗ Removed: {file_path}", fg="yellow")
+
+    def _index_file(self, file_path):
+        """Index a single file."""
+        from repo_intel.utils.language_detector import detect_language
+
+        if not detect_language(file_path):
+            return
+
+        if self.indexer.index_file(file_path, self.project):
+            click.secho(f"✓ Reindexed: {file_path}", fg="green")
+
+
 @main.command()
-def watch():
-    """Watch for changes and reindex."""
-    click.echo("Watch mode not yet implemented")
+@click.option("--project", default="default", help="Project name")
+@click.option("--debounce", default=0.5, help="Debounce seconds (default: 0.5)")
+def watch(project, debounce):
+    """Watch for file changes and reindex."""
+    config = get_config()
+    db_path = Path(config.project_root) / config.db_path
+
+    storage = Storage(str(db_path))
+    indexer = Indexer(str(db_path), verbose=True)
+    event_handler = DebouncedHandler(indexer, storage, project, debounce_seconds=debounce)
+
+    observer = Observer()
+    observer.schedule(event_handler, config.project_root, recursive=True)
+    observer.start()
+
+    click.echo(f"👁️  Watching {config.project_root} (Ctrl+C to stop)")
+    click.echo(f"    Project: {project}")
+    click.echo(f"    Debounce: {debounce}s")
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        click.echo("\n🛑 Stopping watch mode...")
+        observer.stop()
+
+    observer.join()
+    click.echo("✅ Watch mode stopped")
 
 
 @main.command()

@@ -32,3 +32,6 @@ env/
 # repo-intel
 .repo-intel/
 *.db
+.pytest_cache/
+.ruff_cache/
+.superset/
