@@ -57,9 +57,49 @@ def stdio():
 @main.command()
 @click.argument("tool_name")
 @click.option("--json", "output_json", is_flag=True, help="Output as JSON")
-def tool(tool_name, output_json):
+@click.option("--kind", "kind_filter", help="Filter symbols by kind")
+@click.option("--name", "symbol_name", help="Symbol name for find-symbol")
+def tool(tool_name, output_json, kind_filter, symbol_name):
     """Run a specific tool."""
-    click.echo(f"Tool '{tool_name}' not yet implemented")
+    import json
+    from repo_intel.core.config import get_config
+    from repo_intel.core.storage import Storage
+    from repo_intel.tools.list_symbols import list_symbols
+    from repo_intel.tools.find_symbol import find_symbol
+    from repo_intel.tools.call_graph import get_callers, get_callees
+
+    config = get_config()
+    db_path = Path(config.project_root) / config.db_path
+    storage = Storage(str(db_path))
+
+    tools = {
+        "list-symbols": lambda: list_symbols(storage, kind_filter),
+        "find-symbol": lambda: find_symbol(storage, symbol_name) if symbol_name else None,
+        "get-callers": lambda: get_callers(storage, symbol_name) if symbol_name else None,
+        "get-callees": lambda: get_callees(storage, symbol_name) if symbol_name else None,
+    }
+
+    if tool_name not in tools:
+        click.echo(f"Unknown tool: {tool_name}")
+        click.echo(f"Available tools: {', '.join(tools.keys())}")
+        return
+
+    result = tools[tool_name]()
+
+    if result is None:
+        click.echo("Error: This tool requires additional parameters")
+        return
+
+    if output_json:
+        click.echo(json.dumps(result, indent=2))
+    else:
+        if isinstance(result, list):
+            for item in result:
+                click.echo(item)
+        elif isinstance(result, dict):
+            click.echo(json.dumps(result, indent=2))
+        else:
+            click.echo(result)
 
 
 if __name__ == "__main__":
