@@ -12,10 +12,6 @@ def test_watch_command_starts():
     runner = CliRunner()
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        # Initialize repo-intel in temp directory
-        result = runner.invoke(main, ["init", tmpdir])
-        assert result.exit_code == 0
-
         # Create a Python file before watching
         test_file = Path(tmpdir) / "test.py"
         test_file.write_text("def hello():\n    pass\n")

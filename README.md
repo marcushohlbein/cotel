@@ -38,28 +38,28 @@ pip install -e .
 
 ```bash
 cd your-project
-repo-intel init      # Initialize .repo-intel/ database
-repo-intel tool list-symbols --json  # Auto-indexes if needed!
+repo-intel tool list-symbols --json  # That's it! Auto-indexes if needed
 ```
 
-**That's it!** No need to manually run `repo-intel index` - tools auto-index when stale.
+**Zero setup required!** Just run any tool command - it will automatically:
+1. Create `.repo-intel/` directory
+2. Initialize the database
+3. Index your code (using SHA-256 incremental hashing)
+4. Return results
 
 ## CLI Commands
 
 ```bash
-# Initialize
-repo-intel init              # Initialize project database
-
-# Indexing (usually auto-triggered)
-repo-intel index             # Index all source files
-repo-intel index --verbose   # Index with progress feedback
-
 # Query tools (auto-index if stale)
 repo-intel tool list-symbols [--kind function|class|method|endpoint]
 repo-intel tool find-symbol --name myFunction
 repo-intel tool get-callers --name myFunction
 repo-intel tool get-callees --name myFunction
 repo-intel tool list-symbols --no-auto-index  # Skip auto-indexing
+
+# Manual indexing (usually not needed)
+repo-intel index             # Index all source files
+repo-intel index --verbose   # Index with progress feedback
 
 # Watch mode (optional)
 repo-intel watch             # Watch for file changes (Ctrl+C to stop)

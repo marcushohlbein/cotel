@@ -12,24 +12,6 @@ def main():
 
 
 @main.command()
-@click.argument("path", type=click.Path(exists=True), default=".")
-def init(path):
-    """Initialize repo-intel in a repository."""
-    config_dir = Path(path) / ".repo-intel"
-    config_dir.mkdir(exist_ok=True)
-
-    config_path = config_dir / "config.json"
-    if not config_path.exists():
-        config = Config(project_root=str(Path(path).resolve()))
-        import json
-
-        with open(config_path, "w") as f:
-            json.dump(config.to_dict(), f, indent=2)
-
-    click.echo(f"Initialized repo-intel in {path}")
-
-
-@main.command()
 @click.option("--project", default="default", help="Project name")
 @click.option("--verbose", "-v", is_flag=True, help="Show detailed progress")
 def index(project, verbose):
