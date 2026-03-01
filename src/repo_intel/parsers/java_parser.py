@@ -184,40 +184,42 @@ class JavaParser(Parser):
 
     def _extract_http_method(self, node):
         """Extract HTTP method from annotations (Spring MVC)."""
-        # Check for annotations
+        # Check for annotations in modifiers
         for child in node.children:
-            if child.type == "annotation":
-                annotation_text = child.text.decode("utf-8")
-                if (
-                    "@GetMapping" in annotation_text
-                    or "@RequestMapping(method=GET" in annotation_text
-                ):
-                    return "GET"
-                elif (
-                    "@PostMapping" in annotation_text
-                    or "@RequestMapping(method=POST" in annotation_text
-                ):
-                    return "POST"
-                elif "@PutMapping" in annotation_text:
-                    return "PUT"
-                elif "@DeleteMapping" in annotation_text:
-                    return "DELETE"
+            if child.type == "modifiers":
+                for modifier in child.children:
+                    if modifier.type == "annotation":
+                        annotation_text = modifier.text.decode("utf-8")
+                        if (
+                            "@GetMapping" in annotation_text
+                            or "@RequestMapping(method=GET" in annotation_text
+                        ):
+                            return "GET"
+                        elif (
+                            "@PostMapping" in annotation_text
+                            or "@RequestMapping(method=POST" in annotation_text
+                        ):
+                            return "POST"
+                        elif "@PutMapping" in annotation_text:
+                            return "PUT"
+                        elif "@DeleteMapping" in annotation_text:
+                            return "DELETE"
         return None
 
     def _extract_http_path(self, node):
         """Extract HTTP path from Spring annotations."""
         for child in node.children:
-            if child.type == "annotation":
-                annotation_text = child.text.decode("utf-8")
-                # Extract path from @RequestMapping("/path") or @GetMapping("/path")
-                start = annotation_text.find('"')
-                if start == -1:
-                    start = annotation_text.find("'")
-                if start != -1:
-                    end = annotation_text.find(annotation_text[start], start + 1)
-                    if end != -1:
-                        path = annotation_text[start + 1 : end]
-                        # Skip if it's a parameter like "method"
-                        if "=" not in path:
-                            return path
+            if child.type == "modifiers":
+                for modifier in child.children:
+                    if modifier.type == "annotation":
+                        annotation_text = modifier.text.decode("utf-8")
+                        start = annotation_text.find('"')
+                        if start == -1:
+                            start = annotation_text.find("'")
+                        if start != -1:
+                            end = annotation_text.find(annotation_text[start], start + 1)
+                            if end != -1:
+                                path = annotation_text[start + 1 : end]
+                                if "=" not in path:
+                                    return path
         return None

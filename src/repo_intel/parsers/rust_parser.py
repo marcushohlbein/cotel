@@ -46,12 +46,11 @@ class RustParser(Parser):
                     )
                 )
 
-                # Extract function calls
                 self._extract_calls(node, symbol_id, relations)
 
         # Handle struct definitions
         elif node.type == "struct_item":
-            struct_name = self._get_identifier(node)
+            struct_name = self._get_type_identifier(node)
             if struct_name:
                 symbol_id = str(uuid.uuid4())
                 symbols.append(
@@ -70,7 +69,6 @@ class RustParser(Parser):
             old_in_impl = self._in_impl
             self._in_impl = True
 
-            # Recurse into impl block
             for child in node.children:
                 self._traverse(child, content, file_id, symbols, imports, relations)
 
@@ -79,7 +77,7 @@ class RustParser(Parser):
 
         # Handle trait definitions
         elif node.type == "trait_item":
-            trait_name = self._get_identifier(node)
+            trait_name = self._get_type_identifier(node)
             if trait_name:
                 symbol_id = str(uuid.uuid4())
                 symbols.append(
@@ -97,7 +95,6 @@ class RustParser(Parser):
         elif node.type == "use_declaration":
             self._extract_import(node, imports)
 
-        # Recurse into children
         for child in node.children:
             self._traverse(child, content, file_id, symbols, imports, relations)
 
@@ -105,6 +102,13 @@ class RustParser(Parser):
         """Extract identifier from node."""
         for child in node.children:
             if child.type == "identifier":
+                return child.text.decode("utf-8")
+        return None
+
+    def _get_type_identifier(self, node):
+        """Extract type_identifier from node."""
+        for child in node.children:
+            if child.type == "type_identifier":
                 return child.text.decode("utf-8")
         return None
 

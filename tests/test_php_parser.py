@@ -69,9 +69,9 @@ class UserController extends Controller {
 
 
 def test_parse_namespace():
-    code = r"""
-use App\Models\User;
-use App\Http\Controllers\Controller;
+    code = """<?php
+use App\\Models\\User;
+use App\\Http\\Controllers\\Controller;
 """
     parser = PHPParser()
     result = parser.parse(code, "test_file")

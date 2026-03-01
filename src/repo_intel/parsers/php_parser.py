@@ -33,8 +33,7 @@ class PHPParser(Parser):
                 symbol_id = str(uuid.uuid4())
                 kind = "method" if self._in_class else "function"
 
-                # Check for HTTP endpoints (common patterns in Laravel, Symfony)
-                http_method, http_path = self._extract_http_info(node)
+                http_method, http_path = self._extract_http_info(func_name)
 
                 if http_method:
                     kind = "endpoint"
@@ -52,7 +51,33 @@ class PHPParser(Parser):
                     )
                 )
 
-                # Extract function calls
+                self._extract_calls(node, symbol_id, relations)
+
+        # Handle method declarations (methods inside classes)
+        elif node.type == "method_declaration":
+            method_name = self._get_name_from_node(node)
+            if method_name:
+                symbol_id = str(uuid.uuid4())
+                kind = "method"
+
+                http_method, http_path = self._extract_http_info(method_name)
+
+                if http_method:
+                    kind = "endpoint"
+
+                symbols.append(
+                    Symbol(
+                        id=symbol_id,
+                        name=method_name,
+                        kind=kind,
+                        start_line=node.start_point[0] + 1,
+                        end_line=node.end_point[0] + 1,
+                        exported=False,
+                        http_method=http_method,
+                        path=http_path,
+                    )
+                )
+
                 self._extract_calls(node, symbol_id, relations)
 
         # Handle class definitions
@@ -71,14 +96,11 @@ class PHPParser(Parser):
                     )
                 )
 
-                # Check for inheritance
                 self._extract_inheritance(node, symbol_id, relations)
 
-                # Mark that we're inside a class
                 old_in_class = self._in_class
                 self._in_class = True
 
-                # Recurse into class body
                 for child in node.children:
                     self._traverse(child, content, file_id, symbols, imports, relations)
 
@@ -102,10 +124,9 @@ class PHPParser(Parser):
                 )
 
         # Handle use statements
-        elif node.type == "use_statement":
+        elif node.type == "use_statement" or node.type == "namespace_use_declaration":
             self._extract_import(node, imports)
 
-        # Recurse into children
         for child in node.children:
             self._traverse(child, content, file_id, symbols, imports, relations)
 
@@ -174,28 +195,45 @@ class PHPParser(Parser):
 
     def _extract_import(self, node, imports):
         """Extract use statements."""
-        for child in node.children:
-            if child.type == "namespace_name":
-                imports.append(
-                    Import(module=child.text.decode("utf-8"), line=node.start_point[0] + 1)
-                )
-                break
 
-    def _extract_http_info(self, node):
-        """Extract HTTP method and path from PHP function patterns."""
-        func_name = self._get_child_name(node, "name")
+        # Handle namespace_use_declaration - look for qualified_name or namespace_name
+        def find_qualified_name(n):
+            if n.type in ["qualified_name", "namespace_name"]:
+                return n.text.decode("utf-8")
+            for child in n.children:
+                result = find_qualified_name(child)
+                if result:
+                    return result
+            return None
+
+        module = find_qualified_name(node)
+        if module:
+            imports.append(Import(module=module, line=node.start_point[0] + 1))
+
+    def _extract_http_info(self, func_name):
+        """Extract HTTP method and path from PHP function name (Laravel conventions)."""
         if not func_name:
             return None, None
 
-        # Laravel patterns: getUser, postUser, etc.
-        # Common HTTP methods
-        if func_name.startswith("get") or func_name.startswith("index"):
+        # Laravel patterns: index, store, show, update, destroy
+        # Also: getUser, postUser, etc.
+        if func_name == "index":
+            return "GET", "/"
+        elif func_name == "store":
+            return "POST", "/"
+        elif func_name == "show":
+            return "GET", "/{id}"
+        elif func_name == "update":
+            return "PUT", "/{id}"
+        elif func_name == "destroy":
+            return "DELETE", "/{id}"
+        elif func_name.startswith("get"):
             return "GET", self._extract_path_from_name(func_name, "get")
-        elif func_name.startswith("post") or func_name.startswith("store"):
+        elif func_name.startswith("post"):
             return "POST", self._extract_path_from_name(func_name, "post")
-        elif func_name.startswith("put") or func_name.startswith("update"):
+        elif func_name.startswith("put"):
             return "PUT", self._extract_path_from_name(func_name, "put")
-        elif func_name.startswith("delete") or func_name.startswith("destroy"):
+        elif func_name.startswith("delete"):
             return "DELETE", self._extract_path_from_name(func_name, "delete")
 
         return None, None
