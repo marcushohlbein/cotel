@@ -8,9 +8,12 @@ def test_walk_project(tmp_path):
     (tmp_path / ".git").mkdir()
 
     files = list(walk_project(str(tmp_path)))
-    assert len(files) == 2
+    # Only Python files are returned (not README.md)
+    assert len(files) == 1
     assert any(f.endswith("main.py") for f in files)
-    assert any(f.endswith("README.md") for f in files)
+    # README.md is now filtered out
+    assert not any(f.endswith("README.md") for f in files)
+    # .git is still filtered
     assert not any(".git" in f for f in files)
 
 

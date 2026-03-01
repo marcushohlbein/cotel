@@ -15,6 +15,20 @@ IGNORED_DIRS = {
     ".repo-intel",
 }
 
+# Only index these source file extensions
+SOURCE_EXTENSIONS = {
+    ".py",
+    ".pyi",
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".java",
+    ".rs",
+    ".go",
+    ".php",
+}
+
 PROJECT_MARKERS = [
     "package.json",
     "pom.xml",
@@ -28,22 +42,28 @@ PROJECT_MARKERS = [
 
 
 def walk_project(root: str) -> List[str]:
-    """Walk project directory and return source files."""
+    """Walk project directory and return source files only."""
     files = []
     root_path = Path(root)
 
     for file_path in root_path.rglob("*"):
-        if file_path.is_file():
-            relative = file_path.relative_to(root_path)
-            parts = relative.parts
+        if not file_path.is_file():
+            continue
 
-            # Skip ignored directories
-            if any(part in IGNORED_DIRS for part in parts):
-                continue
+        # Only include known source files
+        if file_path.suffix not in SOURCE_EXTENSIONS:
+            continue
 
-            files.append(str(file_path))
+        relative = file_path.relative_to(root_path)
+        parts = relative.parts
 
-    return files
+        # Skip ignored directories
+        if any(part in IGNORED_DIRS for part in parts):
+            continue
+
+        files.append(str(file_path))
+
+    return sorted(files)
 
 
 def find_project_roots(root: str) -> List[str]:
