@@ -75,3 +75,24 @@ def caller():
 
     call_relations = [r for r in result.relations if r.relation_type == "calls"]
     assert len(call_relations) == 1
+
+
+def test_python_parser_extract_references():
+    """Test Python parser extracts function calls"""
+    parser = PythonParser()
+    code = """
+def foo():
+    bar()
+    baz(1, 2)
+    obj.method()
+"""
+
+    refs = parser.extract_references(code)
+
+    # Should find bar, baz, obj.method
+    ref_names = [r["name"] for r in refs]
+
+    assert "bar" in ref_names
+    assert "baz" in ref_names
+    # Method calls might be 'obj.method' or just 'method'
+    assert any("method" in name for name in ref_names)

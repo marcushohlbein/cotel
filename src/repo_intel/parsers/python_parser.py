@@ -1,6 +1,7 @@
 from tree_sitter import Parser as TSParser, Language
 import tree_sitter_python
 from repo_intel.parsers.base import Parser, ParseResult, Symbol, Relation
+from typing import List, Dict
 import uuid
 
 
@@ -132,7 +133,6 @@ class PythonParser(Parser):
                             )
                         )
 
-
     def _extract_http_method(self, node):
         """Extract HTTP method from Flask/FastAPI decorators."""
         # Check decorators (they come before the function)
@@ -178,3 +178,42 @@ class PythonParser(Parser):
                             if end != -1:
                                 return decorator_text[start + 1 : end]
         return None
+
+    def extract_references(self, source_code: str) -> List[Dict]:
+        """Extract function/method calls from Python code"""
+        tree = self.parser.parse(bytes(source_code, "utf8"))
+
+        references = []
+        seen = set()  # Track unique (name, line) combinations
+
+        def traverse_for_calls(node):
+            """Recursively find call expressions"""
+            if node.type == "call":
+                # Get the function being called
+                func_node = node.child_by_field_name("function")
+                if func_node:
+                    if func_node.type == "identifier":
+                        # Direct function call: bar()
+                        name = func_node.text.decode("utf8")
+                        line = func_node.start_point[0]
+                        key = (name, line)
+                        if key not in seen:
+                            seen.add(key)
+                            references.append({"name": name, "line": line, "context": None})
+                    elif func_node.type == "attribute":
+                        # Method call: obj.method()
+                        attr_node = func_node.child_by_field_name("attribute")
+                        if attr_node:
+                            name = attr_node.text.decode("utf8")
+                            line = attr_node.start_point[0]
+                            key = (name, line)
+                            if key not in seen:
+                                seen.add(key)
+                                references.append({"name": name, "line": line, "context": None})
+
+            # Recurse into children
+            for child in node.children:
+                traverse_for_calls(child)
+
+        traverse_for_calls(tree.root_node)
+        return references

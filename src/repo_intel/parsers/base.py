@@ -1,7 +1,8 @@
 """Base parser interface and data classes."""
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List
+from typing import List, Dict
 import uuid
 
 
@@ -37,6 +38,20 @@ class Parser(ABC):
     def parse(self, content: str, file_id: str) -> ParseResult:
         """Parse file content and extract symbols and relations."""
         pass
+
+    def extract_references(self, source_code: str) -> List[Dict]:
+        """
+        Extract symbol references from source code.
+
+        Returns list of dicts with:
+        - name: symbol name being referenced
+        - line: line number
+        - context: surrounding code snippet (optional)
+
+        Default implementation returns empty list.
+        Override in language-specific parsers.
+        """
+        return []
 
     @staticmethod
     def generate_id() -> str:
