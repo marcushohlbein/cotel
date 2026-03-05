@@ -10,6 +10,21 @@
 
 ---
 
+## Workflow Requirements
+
+**After each task completion:**
+1. **Code Review**: Use `superpowers:requesting-code-review` skill
+2. **Simplify**: Use `simplify` skill to refine code for clarity
+3. **Commit**: Only after both review and simplify pass
+
+**Task completion checklist:**
+- [ ] All tests pass
+- [ ] Code review completed
+- [ ] Simplify applied
+- [ ] Changes committed
+
+---
+
 ## Phase 1: Database Schema Extension
 
 ### Task 1: Add references table to schema
