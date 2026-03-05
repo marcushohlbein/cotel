@@ -50,3 +50,23 @@ def test_insert_relation(storage):
     relations = storage.get_relations()
     assert len(relations) == 1
     assert relations[0].relation_type == "calls"
+
+
+def test_references_table_exists(storage):
+    """Test that references table is created"""
+    # Check references table exists
+    cursor = storage.conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='references'"
+    )
+    result = cursor.fetchone()
+    assert result is not None, "references table should exist"
+
+    # Check columns
+    cursor = storage.conn.execute('PRAGMA table_info("references")')
+    columns = {row[1]: row[2] for row in cursor.fetchall()}
+
+    assert "id" in columns
+    assert "symbol_id" in columns
+    assert "file_id" in columns
+    assert "line_number" in columns
+    assert "context_snippet" in columns

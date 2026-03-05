@@ -93,6 +93,18 @@ class Storage:
         """)
 
         self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS "references" (
+                id TEXT PRIMARY KEY,
+                symbol_id TEXT NOT NULL,
+                file_id TEXT NOT NULL,
+                line_number INTEGER NOT NULL,
+                context_snippet TEXT,
+                FOREIGN KEY (symbol_id) REFERENCES symbols(id),
+                FOREIGN KEY (file_id) REFERENCES files(id)
+            )
+        """)
+
+        self.conn.execute("""
             CREATE TABLE IF NOT EXISTS metadata (
                 key TEXT PRIMARY KEY,
                 value TEXT
@@ -109,6 +121,17 @@ class Storage:
         )
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_relations_to ON relations(to_symbol_id)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_files_path ON files(path)")
+
+        # Create indexes for references table
+        self.conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_references_symbol
+            ON "references"(symbol_id)
+        """)
+
+        self.conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_references_file
+            ON "references"(file_id)
+        """)
 
         self.conn.commit()
 
