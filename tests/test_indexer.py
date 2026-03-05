@@ -32,3 +32,25 @@ def test_index_project(temp_indexer, tmp_path):
 
     symbols = temp_indexer.storage.get_symbols()
     assert len(symbols) >= 2
+
+
+def test_indexer_stores_references(temp_indexer, tmp_path):
+    """Test that indexer stores symbol references"""
+    # Create test file
+    test_file = tmp_path / "test.py"
+    test_file.write_text("""
+def helper():
+    pass
+
+def main():
+    helper()
+""")
+
+    # Index
+    temp_indexer.index_file(str(test_file), project="test")
+
+    # Check references were stored
+    cursor = temp_indexer.storage.conn.execute('SELECT COUNT(*) FROM "references"')
+    count = cursor.fetchone()[0]
+
+    assert count > 0, "Should have stored references"

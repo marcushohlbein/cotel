@@ -27,6 +27,7 @@ class SymbolEntry:
     exported: bool
     http_method: Optional[str] = None
     path: Optional[str] = None
+    signature: Optional[str] = None
 
 
 @dataclass
@@ -153,7 +154,7 @@ class Storage:
     def insert_symbol(self, symbol: SymbolEntry, commit: bool = False):
         self.conn.execute(
             """INSERT OR REPLACE INTO symbols
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 symbol.id,
                 symbol.name,
@@ -166,6 +167,7 @@ class Storage:
                 int(symbol.exported),
                 symbol.http_method,
                 symbol.path,
+                symbol.signature,
             ),
         )
         if commit:

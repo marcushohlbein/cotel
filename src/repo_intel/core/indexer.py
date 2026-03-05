@@ -85,6 +85,9 @@ class Indexer:
             )
             self.storage.insert_file(file_entry, commit=commit)
 
+            # Build lookup of symbols from this file by name
+            symbols_by_name = {symbol.name: symbol for symbol in parse_result.symbols}
+
             # Store symbols
             for symbol in parse_result.symbols:
                 entry = SymbolEntry(
@@ -111,6 +114,28 @@ class Indexer:
                     relation_type=relation.relation_type,
                 )
                 self.storage.insert_relation(rel, commit=commit)
+
+            # Extract and store references
+            references = parser.extract_references(content)
+            for ref in references:
+                ref_id = Parser.generate_id()
+
+                # Find symbol_id for this reference - first check current file's symbols
+                symbol = symbols_by_name.get(ref["name"])
+
+                # If not found in current file, check database
+                if not symbol:
+                    symbol = self.storage.get_symbol_by_name(ref["name"])
+
+                if symbol:
+                    self.storage.conn.execute(
+                        """
+                        INSERT OR REPLACE INTO "references"
+                        (id, symbol_id, file_id, line_number, context_snippet)
+                        VALUES (?, ?, ?, ?, ?)
+                    """,
+                        (ref_id, symbol.id, file_id, ref["line"], ref.get("context")),
+                    )
 
             return ("indexed", len(parse_result.symbols), None)
 
