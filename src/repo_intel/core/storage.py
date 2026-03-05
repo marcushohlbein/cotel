@@ -79,7 +79,8 @@ class Storage:
                 end_line INTEGER,
                 exported INTEGER,
                 http_method TEXT,
-                path TEXT
+                path TEXT,
+                signature TEXT
             )
         """)
 

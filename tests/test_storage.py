@@ -70,3 +70,12 @@ def test_references_table_exists(storage):
     assert "file_id" in columns
     assert "line_number" in columns
     assert "context_snippet" in columns
+
+
+def test_symbols_table_has_signature(storage):
+    """Test that symbols table has signature column"""
+    cursor = storage.conn.execute("PRAGMA table_info(symbols)")
+    columns = {row[1]: row[2] for row in cursor.fetchall()}
+
+    assert "signature" in columns, "symbols table should have signature column"
+    assert columns["signature"] == "TEXT"
