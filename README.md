@@ -1,6 +1,6 @@
-# repo-intel
+# repomap
 
-Local-first structural intelligence for code repositories.
+Token-efficient repository maps for AI coding assistants.
 
 ## Features
 
@@ -17,13 +17,13 @@ Local-first structural intelligence for code repositories.
 
 ### From PyPI
 ```bash
-pip install repo-intel
+pip install repomap
 ```
 
 ### System-wide (macOS/Linux)
 ```bash
 # Install
-pip install --user repo-intel
+pip install --user repomap
 
 # Add to PATH (one-time setup)
 echo 'export PATH="$HOME/Library/Python/3.14/bin:$PATH"' >> ~/.zshrc  # macOS
@@ -36,8 +36,8 @@ source ~/.bashrc # Linux
 
 ### From Source
 ```bash
-git clone https://github.com/yourorg/repo-intel
-cd repo-intel
+git clone https://github.com/yourorg/repomap
+cd repomap
 pip install -e . --user
 ```
 
@@ -45,7 +45,9 @@ pip install -e . --user
 
 ```bash
 cd your-project
-repo-intel tool list-symbols --json  # That's it! Auto-indexes if needed
+repomap                    # Generate TOON repomap
+repomap --max-tokens 2048  # Adjust token budget
+repomap --json            # JSON output
 ```
 
 **Zero setup required!** Just run any tool command - it will automatically:
