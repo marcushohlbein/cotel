@@ -35,3 +35,6 @@ env/
 .pytest_cache/
 .ruff_cache/
 .superset/
+
+# Worktrees
+.worktrees/
