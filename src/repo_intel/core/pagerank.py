@@ -44,22 +44,24 @@ class PageRankScorer:
                     # Edge from referencing file to defining file
                     G.add_edge(ref_file, def_file, weight=weight, symbol=symbol)
 
-        # Personalization: boost chat files
-        personalization = {}
-        if chat_files:
-            for f in chat_files:
-                personalization[f] = 1.0 / len(chat_files)
-
         # Run PageRank
         try:
-            if personalization:
+            if chat_files and G.nodes():
+                # Build personalization for all nodes, boosting chat files
+                personalization = {}
+                for node in G.nodes():
+                    if node in chat_files:
+                        personalization[node] = 1.0 / len(chat_files)
+                    else:
+                        personalization[node] = 0.0
+
                 ranked = nx.pagerank(
                     G, weight="weight", personalization=personalization, dangling=personalization
                 )
             else:
                 ranked = nx.pagerank(G, weight="weight")
-        except:
-            # Fallback if graph is empty
+        except Exception:
+            # Fallback if graph is empty or pagerank fails
             return []
 
         # Convert to symbol rankings
